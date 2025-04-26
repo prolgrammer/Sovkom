@@ -30,3 +30,7 @@ secrets.py
 .coverage
 htmlcov/
 .pytest_cache/
+
+minio.exe
+
+minio_data/

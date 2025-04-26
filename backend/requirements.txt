@@ -8,3 +8,4 @@ pydantic[email]
 python-dotenv
 minio
 requests
+apscheduler
