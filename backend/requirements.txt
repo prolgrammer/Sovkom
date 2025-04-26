@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+psycopg2-binary
+sqlalchemy
+pydantic
+pydantic-settings
+pydantic[email]
+python-dotenv
+minio
+requests
