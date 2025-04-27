@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, date
 
 class Item(BaseModel):
     name: str
@@ -10,6 +10,11 @@ class Item(BaseModel):
 
 class ReceiptCreate(BaseModel):
     user_id: int
+
+class ReceiptFilter(BaseModel):
+    user_id: int
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
 
 class ReceiptResponse(BaseModel):
     id: int

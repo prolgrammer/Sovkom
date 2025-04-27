@@ -1,9 +1,12 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 import logging
+from typing import Optional
+
 from fastapi import HTTPException
 import httpx
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 import asyncio
 from app.models.receipt import Receipt
 from app.models.user import User
@@ -11,7 +14,6 @@ from app.core.minio import MinioService
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
-
 
 class ReceiptService:
     def __init__(self):
@@ -69,7 +71,7 @@ class ReceiptService:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 file_ext = minio_path.split('.')[-1].lower()
                 files = {"file": (
-                minio_path, file_content, f"application/{file_ext}" if file_ext == 'pdf' else f"image/{file_ext}")}
+                    minio_path, file_content, f"application/{file_ext}" if file_ext == 'pdf' else f"image/{file_ext}")}
                 response = await client.post(self.analytics_service_url, files=files)
                 if response.status_code != 200:
                     raise HTTPException(status_code=response.status_code, detail=response.text)
@@ -101,12 +103,20 @@ class ReceiptService:
             logger.error(f"Processing error for receipt {receipt_id}: {str(e)}")
             # Не удаляем запись и файл, оставляем для повторной обработки
 
-    def get_user_receipts(self, db: Session, user_id: int):
+    def get_user_receipts(self, db: Session, user_id: int, start_date: Optional[date] = None, end_date: Optional[date] = None):
         # Проверяем, существует ли пользователь
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Возвращаем только обработанные чеки
-        receipts = db.query(Receipt).filter(Receipt.user_id == user_id, Receipt.processed == True).all()
+        # Создаем базовый запрос для обработанных чеков
+        query = db.query(Receipt).filter(Receipt.user_id == user_id, Receipt.processed == True)
+
+        # Добавляем фильтрацию по периоду, если указаны даты
+        if start_date:
+            query = query.filter(Receipt.created_at >= start_date)
+        if end_date:
+            query = query.filter(Receipt.created_at <= end_date)
+
+        receipts = query.all()
         return receipts
